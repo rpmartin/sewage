@@ -2,15 +2,14 @@
 rm(list=ls())#clean out environment
 library(tidyverse)# for data manipulation
 discount_rate <- .05 # you can perform sensitivity analysis by altering the annual discount rate.
-max_horizon <- 50 #the maximum time horizon we are considering. 
-truncated_horizon <- 20 #you can perform sensitivity analysis by altering the time horizon.
+time_horizon <- 20 #the time horizon we are considering. 
 #make tibble with 4 variables: treatment plant, year, thing (cost/benefit), dollar amount.
-plant <- c(rep("secondary", 2*max_horizon), 
-           rep("tertiary", 2*max_horizon), 
-           rep("enhanced", 2*max_horizon))%>%
+plant <- c(rep("secondary", 2*time_horizon), 
+           rep("tertiary", 2*time_horizon), 
+           rep("enhanced", 2*time_horizon))%>%
   factor(ordered=TRUE, levels=c("secondary","tertiary","enhanced"))
-year <- rep(1:(max_horizon), 6)
-thing <- rep(c(rep("cost", max_horizon), rep("benefit", max_horizon)), 3)
+year <- rep(1:(time_horizon), 6)
+thing <- rep(c(rep("cost", time_horizon), rep("benefit", time_horizon)), 3)
 mydf <- tibble(plant=plant, year=year, thing=thing)%>%#create dataframe THEN
   # create artificial data where cost is mostly upfront, where as benefits increase slowly over time, and
   # and the costs and benefits are greatest for enhanced, lowest for secondary, with tertiary intermediate. 
@@ -19,8 +18,7 @@ mydf <- tibble(plant=plant, year=year, thing=thing)%>%#create dataframe THEN
                                  plant == "tertiary" & thing == "cost" ~ 40/year,
                                  plant == "tertiary" & thing == "benefit" ~ log(40000*year),
                                  plant == "enhanced" & thing == "cost" ~ 41/year,
-                                 plant == "enhanced" & thing == "benefit" ~ log(50000*year)))%>%
-  filter(year < truncated_horizon)%>%# just use some of the data THEN
+                                 plant == "enhanced" & thing == "benefit" ~ log(50000*year)))%>%#THEN
   mutate(present_value = dollar_amount/((1+discount_rate)^year))#calculate present value.
 
 plot1 <- mydf%>%#graphical depiction costs and benefits for the three options
@@ -29,7 +27,6 @@ plot1 <- mydf%>%#graphical depiction costs and benefits for the three options
   facet_grid(~plant)
 print(plot1)
 #not obvious by looking which will be best.
-
 
 results <- mydf%>%#use dataframe mydf THEN
   group_by(plant, thing)%>%#keep separate the plants and costs vs. benefits THEN
