@@ -11,7 +11,7 @@ plant <- c(rep("secondary", 2*time_horizon),
 year <- rep(1:(time_horizon), 6)
 thing <- rep(c(rep("cost", time_horizon), rep("benefit", time_horizon)), 3)
 mydf <- tibble(plant=plant, year=year, thing=thing)%>%#create dataframe THEN
-  # create artificial data where cost is mostly upfront, where as benefits increase slowly over time, and
+  # create artificial data where cost is mostly upfront, whereas benefits increase slowly over time, and
   # and the costs and benefits are greatest for enhanced, lowest for secondary, with tertiary intermediate. 
   mutate(dollar_amount=case_when(plant == "secondary" & thing == "cost" ~ 39/year,
                                  plant == "secondary" & thing == "benefit" ~ log(30000*year),
