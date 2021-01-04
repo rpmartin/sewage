@@ -1,18 +1,19 @@
 #script to do cost benefit analysis on sewage treatment options: secondary, tertiary or enhanced.
 rm(list=ls())#clean out environment
 library(tidyverse)# for data manipulation
-discount_rate <- .05 # you can perform sensitivity analysis by altering the annual discount rate.
-time_horizon <- 20 #the time horizon we are considering. 
+discount_rate <- .05 # you can perform sensitivity analysis by changing the annual discount rate.
+time_horizon <- 20 #you can also change the time horizon. 
 #make tibble with 4 variables: treatment plant, year, thing (cost/benefit), dollar amount.
-plant <- c(rep("secondary", 2*time_horizon), 
+plant <- factor(c(rep("secondary", 2*time_horizon), 
            rep("tertiary", 2*time_horizon), 
-           rep("enhanced", 2*time_horizon))%>%
-  factor(ordered=TRUE, levels=c("secondary","tertiary","enhanced"))
+           rep("enhanced", 2*time_horizon)), 
+           ordered=TRUE, 
+           levels=c("secondary","tertiary","enhanced"))
 year <- rep(1:(time_horizon), 6)
 thing <- rep(c(rep("cost", time_horizon), rep("benefit", time_horizon)), 3)
 mydf <- tibble(plant=plant, year=year, thing=thing)%>%#create dataframe THEN
-  # create artificial data where cost is mostly upfront, whereas benefits increase slowly over time, and
-  # and the costs and benefits are greatest for enhanced, lowest for secondary, with tertiary intermediate. 
+# create artificial data for dollar amounts: cost mostly upfront, benefits increase over time &
+# both costs and benefits greatest for enhanced, lowest for secondary, tertiary intermediate. 
   mutate(dollar_amount=case_when(plant == "secondary" & thing == "cost" ~ 39/year,
                                  plant == "secondary" & thing == "benefit" ~ log(30000*year),
                                  plant == "tertiary" & thing == "cost" ~ 40/year,
