@@ -26,7 +26,7 @@ plot1 <- mydf%>%#graphical depiction costs and benefits for the three options
   geom_line()+
   facet_grid(~plant)
 print(plot1)
-#not obvious by looking which will be best.
+#pretty subtle differences!
 
 results <- mydf%>%#use dataframe mydf THEN
   group_by(plant, thing)%>%#keep separate the plants and costs vs. benefits THEN
