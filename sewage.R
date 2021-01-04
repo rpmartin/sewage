@@ -23,11 +23,12 @@ mydf <- tibble(plant=plant, year=year, thing=thing)%>%#create dataframe THEN
   filter(year < truncated_horizon)%>%# just use some of the data THEN
   mutate(present_value = dollar_amount/((1+discount_rate)^year))#calculate present value.
 
-mydf%>%#graphical depiction costs and benefits for the three options
+plot1 <- mydf%>%#graphical depiction costs and benefits for the three options
   ggplot(aes(year, dollar_amount, colour=thing))+
   geom_line()+
   facet_grid(~plant)
-#not obvious which will be best.
+print(plot1)
+#not obvious by looking which will be best.
 
 
 results <- mydf%>%#use dataframe mydf THEN
