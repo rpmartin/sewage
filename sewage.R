@@ -3,9 +3,9 @@ rm(list=ls())#clean out environment
 library(tidyverse)# for data manipulation
 discount_rate <- .05 # you can perform sensitivity analysis by changing the annual discount rate.
 year <- 1:20
-plant <-  factor(c("secondary","tertiary","enhanced"), ordered=TRUE, levels=c("secondary","tertiary","enhanced"))
+plant <-  c("secondary","tertiary","enhanced")
 thing <- c("cost","benefit")
-mydf <- crossing(year,plant,thing)%>%#create dataframe THEN
+mydf <- crossing(year,plant,thing)%>%#create df with all combinations THEN
 # create artificial data for dollar amounts: cost mostly upfront, benefits increase over time &
 # both costs and benefits greatest for enhanced, lowest for secondary, tertiary intermediate. 
   mutate(dollar_amount=case_when(plant == "secondary" & thing == "cost" ~ 39/year,
@@ -19,7 +19,7 @@ mydf <- crossing(year,plant,thing)%>%#create dataframe THEN
 plot1 <- mydf%>%#graphical depiction costs and benefits for the three options
   ggplot(aes(year, dollar_amount, colour=thing))+
   geom_line()+
-  facet_grid(~plant)
+  facet_grid(~fct_reorder(plant,dollar_amount,sum))#over-ride default alphabetic layout.
 print(plot1)
 #pretty subtle differences!
 
