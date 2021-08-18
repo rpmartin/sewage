@@ -1,5 +1,4 @@
 #script to do cost benefit analysis on sewage treatment options: secondary, tertiary or enhanced.
-rm(list=ls())#clean out environment
 library(tidyverse)# for data manipulation
 discount_rate <- .05 # you can perform sensitivity analysis by changing the annual discount rate.
 year <- 1:20
