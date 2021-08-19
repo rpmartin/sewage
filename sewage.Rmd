@@ -138,15 +138,15 @@ plt+
       col=formatter(plt$labels$col))
 ```
 
-If you had reason to believe that every combination of discount rate and time horizon were equally likely occur you could easily calculate the average net present value associated with each of the plant types:
+If every combination of discount rate and time horizon are equally likely to be correct, then the expected net present values are:
 
 ```{r}
-ave_results <- results%>%
+exp_results <- results%>%
   group_by(plant)%>%
-  summarize(average_net_present_value=mean(net_present_value))%>%
-  arrange(desc(average_net_present_value))
+  summarize(expected_net_present_value=mean(net_present_value))%>%
+  arrange(desc(expected_net_present_value))
 
-kbl(ave_results,col.names=formatter(colnames(ave_results)),digits=1)%>% 
+kbl(exp_results,col.names=formatter(colnames(exp_results)),digits=1)%>% 
   kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
 ```
 
