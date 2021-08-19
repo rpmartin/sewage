@@ -135,7 +135,8 @@ plt <- ggplot(filter(results,Horizon==10),aes(discount_rate,net_present_value,co
 plt+
   labs(x=formatter(plt$labels$x),
       y=formatter(plt$labels$y),
-      col=formatter(plt$labels$col))
+      col=formatter(plt$labels$col),
+      title="10 year horizon")
 ```
 
 If every combination of discount rate and time horizon are equally likely to be correct, then the expected net present values are:
