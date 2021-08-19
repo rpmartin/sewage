@@ -1,0 +1,153 @@
+---
+title: "Sensitivity of Cost-Benefit Analysis"
+author: "Richard Martin"
+date: "20/07/2021"
+output:
+  html_document:
+    code_folding: hide
+#bibliography: ref.bibtex
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(kableExtra)
+knitr::opts_chunk$set(echo = TRUE)
+def <- knitr::knit_hooks$get("output")
+knitr::knit_hooks$set(output = function(x, options) {
+  x <- def(x, options)
+  ifelse(!is.null(options$suppress), gsub(pattern = "```.*```", "", x), x)
+})
+formatter <- function(string){
+  string%>%
+    str_replace_all("_", " ")%>%
+    str_to_title()
+}
+```
+
+## Cost-Benefit analysis is simple in a world of certainty:
+
+1) make a list of the mutually exclusive, completely exhaustive alternatives.
+2) for each alternative calculate its net present value (using social opportunity costs).
+3) the best alternative is the one with the largest net present value: choose this alternative.
+
+## However, we typically do not know:
+
+1) the stream of future benefits and costs,
+2) the appropriate discount rate, and
+3) the appropriate time horizon. 
+
+One way to deal with our ignorance is to perform a sensitivity analysis: how sensitive is the optimal choice to our assumptions?  Below we use R to graphically depict the sensitivity of CBA to both the discount rate and time horizon: we are going to assume that the future values are known with certainty.  These costs and benefits are purely hypothetical, but I have chosen them to reflect some stylized facts about sewage treatment:
+
+## Stylized facts:
+
+1) Most of the cost is upfront: the capital cost associated with building the sewage treatment plant.
+2) The benefits of sewage treatment grow over time, presumably because the population is growing.
+3) Treating sewage to a greater extent increases both the cost of the facility and the benefits associated with treatment.
+
+We are going to compare three levels of treatment: Secondary<Tertiary<Enhanced. Note that, prior to December 15, 2020, Victoria had only primary treatment (screening) of its sewage, but primary treatment was no longer considered to be an option. To perform a sensitivity analysis in R we would start by using the `crossing()` function to create a dataframe that contains all the possible combinations of the variables of interest:
+
+1) all the plausible discount rates.
+2) all the years between 1 and the absolute maximum lifespan of the project.
+3) all the possible plant types.
+4) both the "things" under consideration i.e. costs and benefits.
+
+Next we generate some artificial future values for the costs and benefits.  Note that the functions to create these future values were arbitrarily chosen (with much trial and error;) to satisfy the stylized facts above, and ensure the results *are* sensitive to the assumptions: i.e. each plant is the most preferred for some combination of horizon and discount rate. Note that cost benefit analysis utilizes net *present* value, so we need to discount these future values. 
+
+```{r, message=FALSE}
+discount_rate <- seq(.055,.085,.001)
+year <- 1:15
+plant <-  c("Secondary","Tertiary","Enhanced")
+thing <- c("Cost","Benefit")
+mydf <- crossing(year,plant,thing,discount_rate)%>% 
+  mutate(future_value=case_when(plant == "Secondary" & thing == "Cost" ~ 21/year,
+                                 plant == "Secondary" & thing == "Benefit" ~ log(100000*year),
+                                 plant == "Tertiary" & thing == "Cost" ~ 39.99/year,
+                                 plant == "Tertiary" & thing == "Benefit" ~ 1.5035*log(100000*year),
+                                 plant == "Enhanced" & thing == "Cost" ~ 46.5/year,
+                                 plant == "Enhanced" & thing == "Benefit" ~ 1.67*log(100000*year)))%>%#THEN
+  mutate(present_value = future_value/((1+discount_rate)^year))
+```
+
+Below are graphs of the time series of the future value of costs and benefits, with a separate facet for each of the three types of plants.
+
+
+```{r, message=FALSE, suppress = TRUE}
+plt <-  ggplot(mydf,aes(year, future_value, colour=thing))+
+  geom_line()+
+  facet_wrap(vars(fct_reorder(plant,future_value,sum)))#over-ride default alphabetic layout.
+plt+
+  labs(x=formatter(plt$labels$x),
+      y=formatter(plt$labels$y),
+      col=formatter(plt$labels$col))
+```
+
+We are interested in is seeing which plant is preferable for various combinations of time horizon and discount rate. In order to use only the data for the time horizon we are interested in we need to create various subsets of the data, that only contain the data up to the horizon of interest. 
+
+```{r, message=FALSE, suppress = TRUE}
+results <- tibble(Horizon=7:15)
+subset_data <- function(horizon){
+  filter(mydf,year<=horizon)
+}
+results <- results%>%
+  mutate(data_subsets=map(Horizon,subset_data))
+```
+
+Once we have created the subsets of the data, we calculate the net present value for each of the horizon/discount rate combos. 
+
+```{r, message=FALSE, suppress = TRUE}
+get_npv <- function(df){
+  df%>%
+  group_by(plant, thing, discount_rate)%>%
+  summarise(total = sum(present_value))%>%
+  pivot_wider(names_from = thing, values_from = total, names_prefix = "sum_pv_")%>%
+  mutate(net_present_value = sum_pv_Benefit - sum_pv_Cost)
+}
+results <- results%>%
+  mutate(net_present_value=map(data_subsets,get_npv))%>%
+  unnest(net_present_value)
+```
+
+## Results:
+
+The plot below shows how the net present values associated with each plant depends on the discount rate (x axis) and the time horizon (the facets). 
+
+1)  Because costs are mostly upfront and benefits grow over time, the longer the time horizon the more attractive sewage treatment is in general (for all types of plants). 
+2) For short time horizons, regardless of discount rate, Secondary is the best and Enhanced is the worst.
+3) For long time horizons, regardless of discount rate, Secondary is the worst and Enhanced is the best.
+4) Net present values are more sensitive to discount rates for longer time horizons (the curves are steeper).
+
+
+```{r, message=FALSE, suppress = TRUE}
+plt <- ggplot(results,aes(discount_rate,net_present_value,colour=plant))+
+   geom_line()+
+   facet_wrap(vars(Horizon), labeller = label_both)
+plt+
+  labs(x=formatter(plt$labels$x),
+        y=formatter(plt$labels$y),
+        col=formatter(plt$labels$col))
+```
+
+5) For a 10 year horizon with discount rates around 7% Tertiary treatment is the best option. Furthermore, Tertiary treatment is *never* the worst option, regardless of horizon or discount rate.  
+
+```{r, message=FALSE, suppress = TRUE}
+plt <- ggplot(filter(results,Horizon==10),aes(discount_rate,net_present_value,colour=plant))+
+   geom_line()
+plt+
+  labs(x=formatter(plt$labels$x),
+      y=formatter(plt$labels$y),
+      col=formatter(plt$labels$col))
+```
+
+If you had reason to believe that every combination of discount rate and time horizon were equally likely occur you could easily calculate the average net present value associated with each of the plant types:
+
+```{r}
+ave_results <- results%>%
+  group_by(plant)%>%
+  summarize(average_net_present_value=mean(net_present_value))%>%
+  arrange(desc(average_net_present_value))
+
+kbl(ave_results,col.names=formatter(colnames(ave_results)),digits=1)%>% 
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = F)
+```
+
+
